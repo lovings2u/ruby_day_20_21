@@ -23,7 +23,7 @@
     <% @chat_rooms.reverse.each do |chat_room| %>
       <tr class="room<%= chat_room.id %>">
         <td class="chat_room_title_<%= chat_room.id %>"><%= chat_room.title %></td>
-        <td><span class="current<%= chat_room.id %>"><%= chat_room.admissions.size %></span>/<%= chat_room.max_count %></td>
+        <td><span class="current<%= chat_room.id %>"><%= chat_room.admissions.size %></span>/<span class="count<%= chat_room.id %>"><%= chat_room.max_count %></span></td>
         <td class="room_master_<%= chat_room.id %>"><%= chat_room.master_id %></td>
         <td><%= link_to 'Show', chat_room %></td>
       </tr>
@@ -52,6 +52,7 @@ $(document).on('ready', function() {
   function room_updated(data) {
     $(`.chat_room_title_${data.id}`).text(`${data.title}`);
     $(`.room_master_${data.id}`).text(`${data.master_id}`);
+    $(`.count${data.id}`).text(`${data.max_count}`);
   }
   
   function room_destroyed(data) {
