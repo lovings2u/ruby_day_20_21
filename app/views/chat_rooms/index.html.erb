@@ -1,0 +1,96 @@
+<% if user_signed_in? %>
+<%= current_user.email %> / <%= link_to 'log out', destroy_user_session_path, method: :delete %>
+<% else %>
+<%= link_to 'log in', new_user_session_path %>
+<% end %>
+
+
+<hr> 
+
+<h1>Chat Rooms</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>방제</th>
+      <th>인원</th>
+      <th>방장</th>
+      <th></th>
+    </tr>
+  </thead>
+
+  <tbody class="chat_room_list">
+    <% @chat_rooms.reverse.each do |chat_room| %>
+      <tr class="room<%= chat_room.id %>">
+        <td class="chat_room_title_<%= chat_room.id %>"><%= chat_room.title %></td>
+        <td><span class="current<%= chat_room.id %>"><%= chat_room.admissions.size %></span>/<%= chat_room.max_count %></td>
+        <td class="room_master_<%= chat_room.id %>"><%= chat_room.master_id %></td>
+        <td><%= link_to 'Show', chat_room %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'New Chat Room', new_chat_room_path %>
+
+<script>
+$(document).on('ready', function() {
+  // 방이 만들어졌을때, 방에 대한 데이터를 받아서
+  // 방 목록에 추가해주는 js function
+  function room_created(data) {
+    $('.chat_room_list').prepend(`
+      <tr>
+        <td class="chat_room_title_${data.id}">${data.title}</td>
+        <td><span class="current${data.id}">0</span>/${data.max_count}</td>
+        <td class="room_master_${data.master_id}">${data.master_id}</td>
+        <td><a href="/chat_rooms/${data.id}">Show</a></td>
+      </tr>`);
+  }
+    
+  function room_updated(data) {
+    $(`.chat_room_title_${data.id}`).text(`${data.title}`);
+    $(`.room_master_${data.id}`).text(`${data.master_id}`);
+  }
+  
+  function room_destroyed(data) {
+    $(`.room${data.id}`).remove();
+  }
+  
+  function user_joined(data) {
+    var current = $(`.current${data.chat_room_id}`);
+    current.text(parseInt(current.text())+1);
+  }
+  function user_exit(data) {
+    var current = $(`.current${data.chat_room_id}`);
+    current.text(parseInt(current.text())-1);
+  }
+
+  
+  
+  var pusher = new Pusher('<%= ENV["pusher_key"] %>', {
+    cluster: "<%= ENV["pusher_cluster"] %>",
+    encrypted: true
+  });
+
+  var channel = pusher.subscribe('chat_room');
+  channel.bind('create', function(data) {
+    console.log("방만들어짐");
+    room_created(data);
+  });
+  channel.bind('join', function(data) {
+    console.log("유저가 들어감");
+    user_joined(data);
+  });
+  channel.bind('update', function(data) {
+    room_updated(data);
+  })
+  channel.bind('exit', function(data) {
+    user_exit(data);
+  })
+  channel.bind('destroy', function(data) {
+    room_destroyed(data);
+  })
+});
+</script>
